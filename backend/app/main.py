@@ -1,7 +1,7 @@
 import json
-from nis import cat
+from typing import List
 
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from app.routes import issues
 
@@ -198,7 +198,7 @@ def create_issue(issue: IssueCreate, db: Session = Depends(get_db)):
     new_issue = Issue(
         title=issue.title,
         description=issue.description,
-        project_namne=issue.project_name,
+        project_name=issue.project_name,
         location=issue.location,
 
         category=analysis.category,
@@ -232,3 +232,69 @@ def create_issue(issue: IssueCreate, db: Session = Depends(get_db)):
             ]
         )
     )
+
+@app.get("/issues", response_model=List[IssueResponse])
+def get_issues(db: Session = Depends(get_db)):
+    issues = db.query(Issue).all()
+
+    return [
+        IssueResponse(
+            id=issue.id,
+            title=issue.title,
+            description=issue.description,
+            project_name=issue.project_name,
+            location=issue.location,
+            analysis=IssueAnalysis(
+                category=issue.category,
+                urgency=issue.urgency,
+                trade=issue.trade,
+                summary=issue.summary,
+                next_steps=json.loads(issue.next_steps),
+                tasks=[
+                    TaskRecommendation(**task)
+                    for task in json.loads(issue.tasks)
+                ]
+            )
+        )
+        for issue in issues
+    ]
+
+# get issue by id
+@app.get("/issues/{issue_id}", response_model=IssueResponse)
+def get_issue(issue_id: int, db: Session = Depends(get_db)):
+    issue = db.query(Issue).filter(Issue.id == issue_id).first()
+
+    if issue is None:
+        raise HTTPException(status_code=404, detail="Issue not found")
+
+    return IssueResponse(
+        id=issue.id,
+        title=issue.title,
+        description=issue.description,
+        project_name=issue.project_name,
+        location=issue.location,
+        analysis=IssueAnalysis(
+            category=issue.category,
+            urgency=issue.urgency,
+            trade=issue.trade,
+            summary=issue.summary,
+            next_steps=json.loads(issue.next_steps),
+            tasks=[
+                TaskRecommendation(**task)
+                for task in json.loads(issue.tasks)
+            ]
+        )
+    )
+
+# delete issue by id
+@app.delete("/issues/{issue_id}")
+def delete_issue(issue_id: int, db: Session = Depends(get_db)):
+    issue = db.query(Issue).filter(Issue.id == issue_id).first()
+
+    if issue is None:
+        raise HTTPException(status_code=404, detail="Issue not found")
+
+    db.delete(issue)
+    db.commit()
+
+    return {"message": f"Issue {issue_id} deleted successfully"}
