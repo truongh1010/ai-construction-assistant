@@ -1,11 +1,11 @@
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 
 class IssueCreate(BaseModel):
     title: str
     description: str
-    project_name: str | None = None
-    location: str | None = None
+    project_name: Optional[str] = None
+    location: Optional[str] = None
 
 class TaskRecommendation(BaseModel):
     title: str
@@ -18,4 +18,4 @@ class IssueAnalysis(BaseModel):
     trade: str
     summary: str
     next_steps: List[str]
-    Task: List[TaskRecommendation]
+    tasks: List[TaskRecommendation]

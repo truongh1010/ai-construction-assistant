@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from app.routes import issues
 
 app = FastAPI(title="AI Construction Assistant API")
 
@@ -10,6 +11,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"]
 )
+
+# register issues router in FastAPI
+app.include_router(issues.router)
 
 @app.get("/")
 def health_check():
