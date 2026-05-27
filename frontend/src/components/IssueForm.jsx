@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { createIssue } from "../api/issues";
 
-function IssueForm() {
+function IssueForm({ onIssueCreated }) {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -32,6 +32,8 @@ function IssueForm() {
     try {
       const savedIssue = await createIssue(formData);
       setResult(savedIssue);
+
+      onIssueCreated()
 
       setFormData({
         title: "",

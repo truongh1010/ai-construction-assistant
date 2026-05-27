@@ -1,33 +1,35 @@
 import { useEffect, useState } from "react";
 import { getIssues, deleteIssue } from "../api/issues";
 
-function IssueList() {
-  const [issues, setIssues] = useState([]);
+function IssueList({ issues, onIssueDeleted }) {
+//   const [issues, setIssues] = useState([]);
   const [error, setError] = useState("");
 
-  async function loadIssues() {
-    try {
-      const data = await getIssues();
-      setIssues(data);
-    } catch (err) {
-      console.error(err);
-      setError("Failed to load issues.");
-    }
-  }
+//   async function loadIssues() {
+//     try {
+//       const data = await getIssues();
+//       setIssues(data);
+//     } catch (err) {
+//       console.error(err);
+//       setError("Failed to load issues.");
+//     }
+//   }
 
   async function handleDelete(issueId) {
     try {
       await deleteIssue(issueId);
-      loadIssues();
+    //   loadIssues();
+    onIssueDeleted()
+    on
     } catch (err) {
       console.error(err);
       setError("Failed to delete issue.");
     }
   }
 
-  useEffect(() => {
-    loadIssues();
-  }, []);
+//   useEffect(() => {
+//     loadIssues();
+//   }, []);
 
   return (
     <div>
