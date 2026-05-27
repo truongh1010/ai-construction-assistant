@@ -12,6 +12,7 @@ class Issue(Base):
     description = Column(Text, nullable=False)
     project_name = Column(String, nullable=True)
     location = Column(String, nullable=True)
+    status = Column(String, nullable=False, default="Open")
 
     category = Column(String, nullable=False)
     urgency = Column(String, nullable=False)

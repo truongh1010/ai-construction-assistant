@@ -239,3 +239,17 @@ button:disabled {
     font-size: 28px;
   }
 }
+
+.status-row {
+  margin: 14px 0;
+}
+
+.status-row select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  background: white;
+  color: #111827;
+  font-size: 15px;
+}

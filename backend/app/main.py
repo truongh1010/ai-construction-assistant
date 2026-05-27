@@ -11,7 +11,7 @@ from app.routes import issues
 
 from sqlalchemy.orm import Session, session
 from app.models import Issue
-from app.schemas import IssueAnalysis, IssueCreate, IssueResponse, TaskRecommendation
+from app.schemas import IssueAnalysis, IssueCreate, IssueResponse, TaskRecommendation, IssueStatusUpdate
 from app.database import Base, engine, SessionLocal
 
 app = FastAPI(title="AI Construction Assistant API")
@@ -279,6 +279,7 @@ def create_issue(issue: IssueCreate, db: Session = Depends(get_db)):
         description=issue.description,
         project_name=issue.project_name,
         location=issue.location,
+        status="Open",
 
         category=analysis.category,
         urgency=analysis.urgency,
@@ -300,6 +301,7 @@ def create_issue(issue: IssueCreate, db: Session = Depends(get_db)):
         description=new_issue.description,
         project_name=new_issue.project_name,
         location=new_issue.location,
+        status=new_issue.status,
         analysis_source=new_issue.analysis_source,
         analysis=IssueAnalysis(
             category=new_issue.category,
@@ -325,6 +327,7 @@ def get_issues(db: Session = Depends(get_db)):
             description=issue.description,
             project_name=issue.project_name,
             location=issue.location,
+            status=issue.status,
             analysis_source=issue.analysis_source,
             analysis=IssueAnalysis(
                 category=issue.category,
@@ -355,6 +358,7 @@ def get_issue(issue_id: int, db: Session = Depends(get_db)):
         description=issue.description,
         project_name=issue.project_name,
         location=issue.location,
+        status=issue.status,
         analysis_source=issue.analysis_source,
         analysis=IssueAnalysis(
             category=issue.category,
@@ -381,3 +385,48 @@ def delete_issue(issue_id: int, db: Session = Depends(get_db)):
     db.commit()
 
     return {"message": f"Issue {issue_id} deleted successfully"}
+
+@app.patch("/issues/{issue_id}/status")
+def update_issue_status(
+    issue_id: int,
+    status_update: IssueStatusUpdate,
+    db: Session = Depends(get_db)
+):
+    issue = db.query(Issue).filter(Issue.id == issue_id).first()
+
+    if issue is None:
+        raise HTTPException(status_code=404, detail="Issue not found.")
+
+    allowed_statuses = ["Open", "In progress", "Resolved"]
+
+    if status_update.status not in allowed_statuses:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid status. Open, In progress, or Resolved"
+        )
+
+    issue.status = status_update.status
+
+    db.commit()
+    db.refresh(issue)
+
+    return IssueResponse(
+        id=issue.id,
+        title=issue.title,
+        description=issue.description,
+        project_name=issue.project_name,
+        location=issue.location,
+        status=issue.status,
+        analysis=IssueAnalysis(
+            category=issue.category,
+            urgency=issue.urgency,
+            trade=issue.trade,
+            summary=issue.summary,
+            next_steps=json.loads(issue.next_steps),
+            tasks=[
+                TaskRecommendation(**task)
+                for task in json.loads(issue.tasks)
+            ]
+        ),
+        analysis_source=issue.analysis_source
+    )

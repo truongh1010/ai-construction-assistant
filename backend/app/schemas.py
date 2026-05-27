@@ -30,9 +30,13 @@ class IssueResponse(BaseModel):
     description: str
     project_name: Optional[str] = None
     location: Optional[str] = None
+    status: str
     analysis_source: str
     analysis: IssueAnalysis
 
     model_config = {
         "from_attributes": True
     }
+
+class IssueStatusUpdate(BaseModel):
+    status: str

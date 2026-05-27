@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { deleteIssue } from "../api/issues";
+import { deleteIssue, updateIssueStatus } from "../api/issues";
 
 function IssueList({ issues, onIssueDeleted }) {
     const [error, setError] = useState("");
@@ -11,6 +11,16 @@ function IssueList({ issues, onIssueDeleted }) {
         } catch (err) {
             console.error(err);
             setError("Failed to delete issue.");
+        }
+    }
+
+    async function handleStatusChange(issueId, newStatus) {
+        try {
+            await updateIssueStatus(issueId, newStatus)
+            onIssueDeleted()
+        } catch (err) {
+            console.error(err)
+            setError("Failed to update issue status")
         }
     }
 
@@ -42,6 +52,18 @@ function IssueList({ issues, onIssueDeleted }) {
                                 {issue.analysis.urgency}
                             </span>
                             <span className="badge">{issue.analysis.trade}</span>
+                        </div>
+
+                        <div className="status-row">
+                            <label>Status</label>
+                            <select
+                                value={issue.status}
+                                onChange={(event) => handleStatusChange(issue.id, event.target.value)}
+                            >
+                                <option value="Open">Open</option>
+                                <option value="In progress">In progress</option>
+                                <option value="Resolved">Resolved</option>
+                            </select>
                         </div>
 
                         <p>

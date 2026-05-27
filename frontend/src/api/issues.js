@@ -21,3 +21,11 @@ export async function deleteIssue(issueId) {
     const response = await axios.delete(`${API_BASE_URL}/issues/${issueId}`);
     return response.data;
 }
+
+export async function updateIssueStatus(issueId, status) {
+    const response = await axios.patch(`${API_BASE_URL}/issues/${issueId}/status`, {
+        status
+    })
+
+    return response.data
+}
