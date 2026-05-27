@@ -1,4 +1,8 @@
+import os
 import json
+from dotenv import load_dotenv
+from openai import OpenAI
+
 from typing import List
 
 from fastapi import FastAPI, Depends, HTTPException
@@ -11,6 +15,75 @@ from app.schemas import IssueAnalysis, IssueCreate, IssueResponse, TaskRecommend
 from app.database import Base, engine, SessionLocal
 
 app = FastAPI(title="AI Construction Assistant API")
+
+load_dotenv()
+
+api_key = os.getenv("OPENAI_API_KEY")
+
+client = OpenAI(api_key=api_key)
+
+def openai_analyze_issue(issue: IssueCreate) -> IssueAnalysis:
+
+    system_prompt = f"""
+    You are an AI assistant for construction project issue tracking.
+
+    Analyze a provided construction issue and return ONLY valid JSON. No Markdown. No Explanation.
+
+    Return JSON with exactly this structure:
+    {{
+        "category": "string",
+        "urgency": "Low | Medium | High | Critical",
+        "trade": "string",
+        "summary": "string",
+        "next_steps": ["string", "string", "string"],
+        "tasks": [
+            {{
+                "title": "string",
+                "assigned_to": "string",
+                "priority": "Low | Medium | High | Critical"
+            }}
+        ]
+    }}
+    """
+
+    user_prompt = f"""
+    Analyze the following construction issue:
+
+    Issue title: {issue.title}
+    Description: {issue.description}
+    Project name: {issue.project_name}
+    Location: {issue.location}
+    """
+
+    response = client.chat.completions.create(
+        model="gpt-4.1-mini",
+        messages=[
+            {
+                "role": "system",
+                "content": system_prompt
+            },
+            {
+                "role": "user",
+                "content": user_prompt
+            }
+        ],
+        temperature=0.2
+    )
+
+    content = response.choices[0].message.content
+    data = json.loads(content)
+
+    return IssueAnalysis(
+        category=data["category"],
+        urgency=data["urgency"],
+        trade=data["trade"],
+        summary=data["summary"],
+        next_steps=data["next_steps"],
+        tasks=[
+            TaskRecommendation(**task)
+            for task in data["tasks"]
+        ]
+    )
 
 app.add_middleware(
     CORSMiddleware,
@@ -193,7 +266,11 @@ def health_check():
 
 @app.post("/issues", response_model=IssueResponse)
 def create_issue(issue: IssueCreate, db: Session = Depends(get_db)):
-    analysis = fake_ai_analyze_issue(issue)
+    try:
+        analysis = openai_analyze_issue(issue)
+    except Exception as e:
+        print("OpenAI analysis failed. Falling back to the fake AI:")
+        analysis = fake_ai_analyze_issue(issue)
 
     new_issue = Issue(
         title=issue.title,
