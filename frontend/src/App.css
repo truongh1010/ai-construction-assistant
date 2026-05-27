@@ -253,3 +253,42 @@ button:disabled {
   color: #111827;
   font-size: 15px;
 }
+
+.filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.filter-button {
+  background: #f3f4f6;
+  color: #374151;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 14px;
+}
+
+.filter-button:hover {
+  background: #e5e7eb;
+}
+
+.filter-button.active {
+  background: #2563eb;
+  color: white;
+}
+
+.badge.status-open {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.badge.status-in-progress {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.badge.status-resolved {
+  background: #dcfce7;
+  color: #166534;
+}

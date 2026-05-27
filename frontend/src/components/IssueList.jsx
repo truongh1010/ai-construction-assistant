@@ -3,6 +3,11 @@ import { deleteIssue, updateIssueStatus } from "../api/issues";
 
 function IssueList({ issues, onIssueDeleted }) {
     const [error, setError] = useState("");
+    const [statusFilter, setStatusFilter] = useState("All")
+
+    const filteredIssues = statusFilter === "All"
+        ? issues
+        : issues.filter((issue) => issue.status === statusFilter)
 
     async function handleDelete(issueId) {
         try {
@@ -28,12 +33,24 @@ function IssueList({ issues, onIssueDeleted }) {
         <div>
             <h2>Saved Issues</h2>
 
+            <div className="filter-row">
+                {["All", "Open", "In progress", "Resolved"].map((status) => (
+                    <button
+                        key={status}
+                        className={statusFilter === status ? "filter-button active" : "filter-button"}
+                        onClick={() => setStatusFilter(status)}
+                    >
+                        {status}
+                    </button>
+                ))}
+            </div>
+
             {error && <p>{error}</p>}
 
-            {issues.length === 0 ? (
+            {filteredIssues.length === 0 ? (
                 <p>No saved issues yet.</p>
             ) : (
-                issues.map((issue) => (
+                filteredIssues.map((issue) => (
                     <div className="issue-card" key={issue.id}>
                         <h3>{issue.title}</h3>
                         <p className="issue-description">{issue.description}</p>
