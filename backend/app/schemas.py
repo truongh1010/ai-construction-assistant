@@ -30,7 +30,7 @@ class IssueResponse(BaseModel):
     description: str
     project_name: Optional[str] = None
     location: Optional[str] = None
-
+    analysis_source: str
     analysis: IssueAnalysis
 
     model_config = {

@@ -21,4 +21,6 @@ class Issue(Base):
     next_steps = Column(Text, nullable=False)
     tasks = Column(Text, nullable=False)
 
+    analysis_source = Column(String, nullable=False, default="openai")
+
     created_at = Column(DateTime(timezone=True), server_default=func.now())

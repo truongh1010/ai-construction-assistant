@@ -268,9 +268,11 @@ def health_check():
 def create_issue(issue: IssueCreate, db: Session = Depends(get_db)):
     try:
         analysis = openai_analyze_issue(issue)
+        analysis_source = "openai"
     except Exception as e:
         print("OpenAI analysis failed. Falling back to the fake AI:")
         analysis = fake_ai_analyze_issue(issue)
+        analysis_source = "fallback"
 
     new_issue = Issue(
         title=issue.title,
@@ -284,7 +286,8 @@ def create_issue(issue: IssueCreate, db: Session = Depends(get_db)):
         summary=analysis.summary,
 
         next_steps=json.dumps(analysis.next_steps),
-        tasks=json.dumps([task.dict() for task in analysis.tasks])
+        tasks=json.dumps([task.dict() for task in analysis.tasks]),
+        analysis_source=analysis_source
     )
 
     db.add(new_issue)
@@ -297,6 +300,7 @@ def create_issue(issue: IssueCreate, db: Session = Depends(get_db)):
         description=new_issue.description,
         project_name=new_issue.project_name,
         location=new_issue.location,
+        analysis_source=new_issue.analysis_source,
         analysis=IssueAnalysis(
             category=new_issue.category,
             urgency=new_issue.urgency,
@@ -321,6 +325,7 @@ def get_issues(db: Session = Depends(get_db)):
             description=issue.description,
             project_name=issue.project_name,
             location=issue.location,
+            analysis_source=issue.analysis_source,
             analysis=IssueAnalysis(
                 category=issue.category,
                 urgency=issue.urgency,
@@ -350,6 +355,7 @@ def get_issue(issue_id: int, db: Session = Depends(get_db)):
         description=issue.description,
         project_name=issue.project_name,
         location=issue.location,
+        analysis_source=issue.analysis_source,
         analysis=IssueAnalysis(
             category=issue.category,
             urgency=issue.urgency,
