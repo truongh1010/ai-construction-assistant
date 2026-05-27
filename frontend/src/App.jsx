@@ -2,32 +2,47 @@ import { useEffect, useState } from "react";
 import IssueForm from "./components/IssueForm";
 import IssueList from "./components/IssueList";
 import { getIssues } from "./api/issues";
+import "./App.css"
 
 function App() {
-  const [issues, setIssues] = useState([]);
+    const [issues, setIssues] = useState([]);
 
-  async function loadIssues() {
-    try {
-      const data = await getIssues();
-      setIssues(data);
-    } catch (err) {
-      console.error("Failed to load issues:", err);
+    async function loadIssues() {
+        try {
+            const data = await getIssues();
+            setIssues(data);
+        } catch (err) {
+            console.error("Failed to load issues:", err);
+        }
     }
-  }
 
-  useEffect(() => {
-    loadIssues();
-  }, []);
+    useEffect(() => {
+        loadIssues();
+    }, []);
 
-  return (
-    <div>
-      <h1>AI Construction Assistant</h1>
+    return (
+        <div className="app">
+            <header className="app-header">
+                <div>
+                    <p className="eyebrow">AI Construction Assistant</p>
+                    <h1>Construction Issue Dashboard</h1>
+                    <p className="subtitle">
+                        Submit project issues, classify them, generate next steps, and track saved records.
+                    </p>
+                </div>
+            </header>
 
-      <IssueForm onIssueCreated={loadIssues} />
+            <main className="dashboard">
+                <section className="panel">
+                    <IssueForm onIssueCreated={loadIssues}/>
+                </section>
 
-      <IssueList issues={issues} onIssueDeleted={loadIssues} />
-    </div>
-  );
+                <section className="panel">
+                    <IssueList issues={issues} onIssueDeleted={loadIssues} />
+                </section>
+            </main>
+        </div>
+    );
 }
 
 export default App;

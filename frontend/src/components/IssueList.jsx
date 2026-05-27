@@ -1,80 +1,61 @@
-import { useEffect, useState } from "react";
-import { getIssues, deleteIssue } from "../api/issues";
+import { useState } from "react";
+import { deleteIssue } from "../api/issues";
 
 function IssueList({ issues, onIssueDeleted }) {
-//   const [issues, setIssues] = useState([]);
-  const [error, setError] = useState("");
+    const [error, setError] = useState("");
 
-//   async function loadIssues() {
-//     try {
-//       const data = await getIssues();
-//       setIssues(data);
-//     } catch (err) {
-//       console.error(err);
-//       setError("Failed to load issues.");
-//     }
-//   }
-
-  async function handleDelete(issueId) {
-    try {
-      await deleteIssue(issueId);
-    //   loadIssues();
-    onIssueDeleted()
-    on
-    } catch (err) {
-      console.error(err);
-      setError("Failed to delete issue.");
+    async function handleDelete(issueId) {
+        try {
+            await deleteIssue(issueId);
+            onIssueDeleted();
+        } catch (err) {
+            console.error(err);
+            setError("Failed to delete issue.");
+        }
     }
-  }
 
-//   useEffect(() => {
-//     loadIssues();
-//   }, []);
+    return (
+        <div>
+            <h2>Saved Issues</h2>
 
-  return (
-    <div>
-      <h2>Saved Issues</h2>
+            {error && <p>{error}</p>}
 
-      {error && <p>{error}</p>}
+            {issues.length === 0 ? (
+                <p>No saved issues yet.</p>
+            ) : (
+                issues.map((issue) => (
+                    <div className="issue-card" key={issue.id}>
+                        <h3>{issue.title}</h3>
+                        <p className="issue-description">{issue.description}</p>
 
-      {issues.length === 0 ? (
-        <p>No saved issues yet.</p>
-      ) : (
-        issues.map((issue) => (
-          <div key={issue.id}>
-            <h3>{issue.title}</h3>
-            <p>{issue.description}</p>
+                        <p>
+                            <strong>Project:</strong> {issue.project_name || "N/A"}
+                        </p>
 
-            <p>
-              <strong>Project:</strong> {issue.project_name || "N/A"}
-            </p>
+                        <p>
+                            <strong>Location:</strong> {issue.location || "N/A"}
+                        </p>
 
-            <p>
-              <strong>Location:</strong> {issue.location || "N/A"}
-            </p>
+                        <div className="badges">
+                            <span className="badge">{issue.analysis.category}</span>
+                            <span className={`badge ${issue.analysis.urgency.toLowerCase()}`}>
+                                {issue.analysis.urgency}
+                            </span>
+                            <span className="badge">{issue.analysis.trade}</span>
+                        </div>
 
-            <p>
-              <strong>Category:</strong> {issue.analysis.category}
-            </p>
+                        <p>
+                            <strong>Summary:</strong> {issue.analysis.summary}
+                        </p>
 
-            <p>
-              <strong>Urgency:</strong> {issue.analysis.urgency}
-            </p>
-
-            <p>
-              <strong>Trade:</strong> {issue.analysis.trade}
-            </p>
-
-            <button onClick={() => handleDelete(issue.id)}>
-              Delete
-            </button>
-
-            <hr />
-          </div>
-        ))
-      )}
-    </div>
-  );
+                        <button onClick={() => handleDelete(issue.id)}>
+                            Delete
+                        </button>
+                    </div>
+                ))
+            )}
+        </div>
+    );
 }
 
 export default IssueList;
