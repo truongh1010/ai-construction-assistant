@@ -40,3 +40,10 @@ class IssueResponse(BaseModel):
 
 class IssueStatusUpdate(BaseModel):
     status: str
+
+
+class IssueUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    project_name: Optional[str] = None
+    location: Optional[str] = None

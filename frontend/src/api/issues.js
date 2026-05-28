@@ -29,3 +29,13 @@ export async function updateIssueStatus(issueId, status) {
 
     return response.data
 }
+
+export async function reanalyzeIssue(issueId) {
+    const response = await axios.post(`${API_BASE_URL}/issues/${issueId}/reanalyze`);
+    return response.data;
+  }
+
+export async function updateIssue(issueId, issueData) {
+    const response = await axios.put(`${API_BASE_URL}/issues/${issueId}`, issueData);
+    return response.data;
+}

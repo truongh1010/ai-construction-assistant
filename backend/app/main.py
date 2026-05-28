@@ -11,7 +11,7 @@ from app.routes import issues
 
 from sqlalchemy.orm import Session, session
 from app.models import Issue
-from app.schemas import IssueAnalysis, IssueCreate, IssueResponse, TaskRecommendation, IssueStatusUpdate
+from app.schemas import IssueAnalysis, IssueCreate, IssueResponse, TaskRecommendation, IssueStatusUpdate, IssueUpdate
 from app.database import Base, engine, SessionLocal
 
 app = FastAPI(title="AI Construction Assistant API")
@@ -256,6 +256,27 @@ def fake_ai_analyze_issue(issue: IssueCreate) -> IssueAnalysis:
         tasks=tasks
     )
 
+def build_issue_response(issue: Issue) -> IssueResponse:
+    return IssueResponse(
+        id=issue.id,
+        title=issue.title,
+        description=issue.description,
+        project_name=issue.project_name,
+        location=issue.location,
+        status=issue.status,
+        analysis=IssueAnalysis(
+            category=issue.category,
+            urgency=issue.urgency,
+            trade=issue.trade,
+            summary=issue.summary,
+            next_steps=json.loads(issue.next_steps),
+            tasks=[
+                TaskRecommendation(**task)
+                for task in json.loads(issue.tasks)
+            ]
+        ),
+        analysis_source=issue.analysis_source
+    )
 
 @app.get("/")
 def health_check():
@@ -295,53 +316,15 @@ def create_issue(issue: IssueCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_issue)
 
-    return IssueResponse(
-        id=new_issue.id,
-        title=new_issue.title,
-        description=new_issue.description,
-        project_name=new_issue.project_name,
-        location=new_issue.location,
-        status=new_issue.status,
-        analysis_source=new_issue.analysis_source,
-        analysis=IssueAnalysis(
-            category=new_issue.category,
-            urgency=new_issue.urgency,
-            trade=new_issue.trade,
-            summary=new_issue.summary,
-            next_steps=json.loads(new_issue.next_steps),
-            tasks=[
-                TaskRecommendation(**task)
-                for task in json.loads(new_issue.tasks)
-            ]
-        )
-    )
+    return build_issue_response(new_issue)
 
 @app.get("/issues", response_model=List[IssueResponse])
 def get_issues(db: Session = Depends(get_db)):
-    issues = db.query(Issue).all()
+    issues = db.query(Issue).order_by(Issue.id.desc()).all()
 
     return [
-        IssueResponse(
-            id=issue.id,
-            title=issue.title,
-            description=issue.description,
-            project_name=issue.project_name,
-            location=issue.location,
-            status=issue.status,
-            analysis_source=issue.analysis_source,
-            analysis=IssueAnalysis(
-                category=issue.category,
-                urgency=issue.urgency,
-                trade=issue.trade,
-                summary=issue.summary,
-                next_steps=json.loads(issue.next_steps),
-                tasks=[
-                    TaskRecommendation(**task)
-                    for task in json.loads(issue.tasks)
-                ]
-            )
-        )
-        for issue in issues
+        build_issue_response(issue)
+            for issue in issues
     ]
 
 # get issue by id
@@ -352,26 +335,7 @@ def get_issue(issue_id: int, db: Session = Depends(get_db)):
     if issue is None:
         raise HTTPException(status_code=404, detail="Issue not found")
 
-    return IssueResponse(
-        id=issue.id,
-        title=issue.title,
-        description=issue.description,
-        project_name=issue.project_name,
-        location=issue.location,
-        status=issue.status,
-        analysis_source=issue.analysis_source,
-        analysis=IssueAnalysis(
-            category=issue.category,
-            urgency=issue.urgency,
-            trade=issue.trade,
-            summary=issue.summary,
-            next_steps=json.loads(issue.next_steps),
-            tasks=[
-                TaskRecommendation(**task)
-                for task in json.loads(issue.tasks)
-            ]
-        )
-    )
+    return build_issue_response(issue)
 
 # delete issue by id
 @app.delete("/issues/{issue_id}")
@@ -410,23 +374,67 @@ def update_issue_status(
     db.commit()
     db.refresh(issue)
 
-    return IssueResponse(
-        id=issue.id,
+    return build_issue_response(issue)
+
+@app.put("/issues/{issue_id}", response_model=IssueResponse)
+def update_issue(
+    issue_id: int,
+    issue_update: IssueUpdate,
+    db: Session = Depends(get_db)
+):
+    issue = db.query(Issue).filter(Issue.id == issue_id).first()
+
+    if issue is None:
+        raise HTTPException(status_code=404, detail="Issue not found")
+
+    if issue_update.title is not None:
+        issue.title = issue_update.title
+
+    if issue_update.description is not None:
+        issue.description = issue_update.description
+
+    if issue_update.project_name is not None:
+        issue.project_name = issue_update.project_name
+
+    if issue_update.location is not None:
+        issue.location = issue_update.location
+
+    db.commit()
+    db.refresh(issue)
+
+    return build_issue_response(issue)
+
+@app.post("/issues/{issue_id}/reanalyze", response_model=IssueResponse)
+def reanalyze_issue(issue_id: int, db: Session = Depends(get_db)):
+    issue = db.query(Issue).filter(Issue.id == issue_id).first()
+
+    if issue is None:
+        raise HTTPException(status_code=404, detail="Issue not found")
+
+    issue_input = IssueCreate(
         title=issue.title,
         description=issue.description,
         project_name=issue.project_name,
         location=issue.location,
-        status=issue.status,
-        analysis=IssueAnalysis(
-            category=issue.category,
-            urgency=issue.urgency,
-            trade=issue.trade,
-            summary=issue.summary,
-            next_steps=json.loads(issue.next_steps),
-            tasks=[
-                TaskRecommendation(**task)
-                for task in json.loads(issue.tasks)
-            ]
-        ),
-        analysis_source=issue.analysis_source
     )
+
+    try:
+        analysis = openai_analyze_issue(issue_input)
+        analysis_source = "openai"
+    except Exception as e:
+        print("OpenAI reanalysis failed. Falling back to fake AI:", e)
+        analysis = fake_ai_analyze_issue(issue_input)
+        analysis_source = "fallback"
+
+    issue.category = analysis.category
+    issue.urgency = analysis.urgency
+    issue.trade = analysis.trade
+    issue.summary = analysis.summary
+    issue.next_steps = json.dumps(analysis.next_steps)
+    issue.tasks = json.dumps([task.dict() for task in analysis.tasks])
+    issue.analysis_source = analysis_source
+
+    db.commit()
+    db.refresh(issue)
+
+    return build_issue_response(issue)

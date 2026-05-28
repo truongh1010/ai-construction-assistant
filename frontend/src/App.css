@@ -371,3 +371,51 @@ button:disabled {
   color: #111827;
   font-size: 15px;
 }
+
+.sort-row {
+  margin-bottom: 14px;
+}
+
+.sort-row label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 700;
+  font-size: 14px;
+  color: #111827;
+}
+
+.sort-row select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  background: white;
+  color: #111827;
+  font-size: 15px;
+}
+
+.card-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.secondary-button {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.secondary-button:hover {
+  background: #e5e7eb;
+}
+
+.edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding: 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #f9fafb;
+}

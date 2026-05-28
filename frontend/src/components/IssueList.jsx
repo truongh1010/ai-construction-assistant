@@ -1,33 +1,89 @@
 import { useState } from "react";
-import { deleteIssue, updateIssueStatus } from "../api/issues";
+import { deleteIssue, updateIssueStatus, reanalyzeIssue, updateIssue } from "../api/issues";
 
 function IssueList({ issues, onIssueDeleted }) {
     const [error, setError] = useState("");
     const [statusFilter, setStatusFilter] = useState("All")
     const [searchTerm, setSearchTerm] = useState("")
+    const [sortBy, setSortBy] = useState("Newest")
+    const [reanalyzingId, setReanalyzingId] = useState(null)
+    const [editingId, setEditingId] = useState(null);
+    const [editForm, setEditForm] = useState({
+        title: "",
+        description: "",
+        project_name: "",
+        location: "",
+    });
 
     const filteredIssues = issues.filter((issue) => {
-        const matchesStatus = statusFilter === "All"
-            ? issues
-            : issues.filter((issue) => issue.status === statusFilter)
+        const matchesStatus =
+            statusFilter === "All" || issue.status === statusFilter;
 
-            const searchText = `
-                ${issue.title}
-                ${issue.description}
-                ${issue.project_name || ""}
-                ${issue.location || ""}
-                ${issue.status}
-                ${issue.analysis.category}
-                ${issue.analysis.urgency}
-                ${issue.analysis.trade}
-                ${issue.analysis.summary}
-                ${issue.analysis_source}
-          `.toLowerCase();
-        
-            const matchesSearch = searchText.includes(searchTerm.toLowerCase());
-        
-            return matchesStatus && matchesSearch;
-    })
+        const searchText = `
+            ${issue.title}
+            ${issue.description}
+            ${issue.project_name || ""}
+            ${issue.location || ""}
+            ${issue.status}
+            ${issue.analysis.category}
+            ${issue.analysis.urgency}
+            ${issue.analysis.trade}
+            ${issue.analysis.summary}
+        `.toLowerCase();
+
+        const matchesSearch = searchText.includes(searchTerm.toLowerCase());
+
+        return matchesStatus && matchesSearch;
+    });
+
+    const urgencyRank = {
+        Critical: 4,
+        High: 3,
+        Medium: 2,
+        Low: 1,
+    };
+
+    const statusRank = {
+        Open: 3,
+        "In Progress": 2,
+        Resolved: 1,
+    };
+
+    const sortedIssues = [...filteredIssues].sort((a, b) => {
+        if (sortBy === "Newest") {
+            return b.id - a.id;
+        }
+
+        if (sortBy === "Oldest") {
+            return a.id - b.id;
+        }
+
+        if (sortBy === "Urgency") {
+            return (
+                (urgencyRank[b.analysis.urgency] || 0) -
+                (urgencyRank[a.analysis.urgency] || 0)
+            );
+        }
+
+        if (sortBy === "Status") {
+            return (statusRank[b.status] || 0) - (statusRank[a.status] || 0);
+        }
+
+        return 0;
+    });
+
+    async function handleReanalyze(issueId) {
+        try {
+            setReanalyzingId(issueId)
+            await reanalyzeIssue(issueId)
+            onIssueDeleted()
+        } catch (err) {
+            console.error(err)
+            setError("Failed to reanalyze issue.")
+        } finally {
+            setReanalyzingId(null)
+        }
+    }
 
     async function handleDelete(issueId) {
         try {
@@ -49,6 +105,46 @@ function IssueList({ issues, onIssueDeleted }) {
         }
     }
 
+    function startEditing(issue) {
+        setEditingId(issue.id);
+        setEditForm({
+            title: issue.title,
+            description: issue.description,
+            project_name: issue.project_name || "",
+            location: issue.location || "",
+        });
+    }
+
+    function cancelEditing() {
+        setEditingId(null);
+        setEditForm({
+            title: "",
+            description: "",
+            project_name: "",
+            location: "",
+        });
+    }
+
+    function handleEditChange(event) {
+        const { name, value } = event.target;
+
+        setEditForm((prev) => ({
+            ...prev,
+            [name]: value,
+        }));
+    }
+
+    async function handleSaveEdit(issueId) {
+        try {
+            await updateIssue(issueId, editForm);
+            setEditingId(null);
+            onIssueDeleted();
+        } catch (err) {
+            console.error(err);
+            setError("Failed to update issue.");
+        }
+    }
+
     return (
         <div>
             <h2>Saved Issues</h2>
@@ -60,6 +156,16 @@ function IssueList({ issues, onIssueDeleted }) {
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
             />
+
+            <div className="sort-row">
+                <label>Sort by</label>
+                <select value={sortBy} onChange={(event) => setSortBy(event.target.value)}>
+                    <option value="Newest">Newest</option>
+                    <option value="Oldest">Oldest</option>
+                    <option value="Urgency">Urgency</option>
+                    <option value="Status">Status</option>
+                </select>
+            </div>
 
             <div className="filter-row">
                 {["All", "Open", "In progress", "Resolved"].map((status) => (
@@ -75,21 +181,67 @@ function IssueList({ issues, onIssueDeleted }) {
 
             {error && <p>{error}</p>}
 
-            {filteredIssues.length === 0 ? (
+            {sortedIssues.length === 0 ? (
                 <p>No saved issues yet.</p>
             ) : (
-                filteredIssues.map((issue) => (
+                sortedIssues.map((issue) => (
                     <div className="issue-card" key={issue.id}>
-                        <h3>{issue.title}</h3>
-                        <p className="issue-description">{issue.description}</p>
+                        {editingId === issue.id ? (
+                            <div className="edit-form">
+                                <label>Title</label>
+                                <input
+                                    type="text"
+                                    name="title"
+                                    value={editForm.title}
+                                    onChange={handleEditChange}
+                                />
 
-                        <p>
-                            <strong>Project:</strong> {issue.project_name || "N/A"}
-                        </p>
+                                <label>Description</label>
+                                <textarea
+                                    name="description"
+                                    value={editForm.description}
+                                    onChange={handleEditChange}
+                                />
 
-                        <p>
-                            <strong>Location:</strong> {issue.location || "N/A"}
-                        </p>
+                                <label>Project Name</label>
+                                <input
+                                    type="text"
+                                    name="project_name"
+                                    value={editForm.project_name}
+                                    onChange={handleEditChange}
+                                />
+
+                                <label>Location</label>
+                                <input
+                                    type="text"
+                                    name="location"
+                                    value={editForm.location}
+                                    onChange={handleEditChange}
+                                />
+
+                                <div className="card-actions">
+                                    <button onClick={() => handleSaveEdit(issue.id)}>Save Changes</button>
+
+                                    <button className="secondary-button" onClick={cancelEditing}>
+                                        Cancel
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            <>
+                                <h3>{issue.title}</h3>
+
+                                <p className="issue-description">{issue.description}</p>
+
+                                <p>
+                                    <strong>Project:</strong> {issue.project_name || "N/A"}
+                                </p>
+
+                                <p>
+                                    <strong>Location:</strong> {issue.location || "N/A"}
+                                </p>
+                            </>
+                        )}
 
                         <div className="badges">
                             <span className="badge">{issue.analysis.category}</span>
@@ -137,10 +289,25 @@ function IssueList({ issues, onIssueDeleted }) {
                                 </div>
                             ))}
                         </div>
+                        <div className="card-actions">
+                            <button
+                                className="secondary-button"
+                                onClick={() => startEditing(issue)}
+                            >
+                                Edit
+                            </button>
+                            <button
+                                className="secondary-button"
+                                onClick={() => handleReanalyze(issue.id)}
+                                disabled={reanalyzingId === issue.id}
+                            >
+                                {reanalyzingId === issue.id ? "Reanalyzing..." : "Reanalyze"}
+                            </button>
 
-                        <button onClick={() => handleDelete(issue.id)}>
-                            Delete
-                        </button>
+                            <button onClick={() => handleDelete(issue.id)}>
+                                Delete
+                            </button>
+                        </div>
                     </div>
                 ))
             )}
