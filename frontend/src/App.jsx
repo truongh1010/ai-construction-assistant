@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import IssueForm from "./components/IssueForm";
 import IssueList from "./components/IssueList";
 import { getIssues } from "./api/issues";
-import "./App.css"
+import DashboardStats from "./components/DashBoardStats";
+import "./App.css";
 
 function App() {
     const [issues, setIssues] = useState([]);
@@ -31,6 +32,8 @@ function App() {
                     </p>
                 </div>
             </header>
+
+            <DashboardStats issues={issues}/>
 
             <main className="dashboard">
                 <section className="panel">

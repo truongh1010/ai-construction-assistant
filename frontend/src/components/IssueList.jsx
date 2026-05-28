@@ -4,10 +4,30 @@ import { deleteIssue, updateIssueStatus } from "../api/issues";
 function IssueList({ issues, onIssueDeleted }) {
     const [error, setError] = useState("");
     const [statusFilter, setStatusFilter] = useState("All")
+    const [searchTerm, setSearchTerm] = useState("")
 
-    const filteredIssues = statusFilter === "All"
-        ? issues
-        : issues.filter((issue) => issue.status === statusFilter)
+    const filteredIssues = issues.filter((issue) => {
+        const matchesStatus = statusFilter === "All"
+            ? issues
+            : issues.filter((issue) => issue.status === statusFilter)
+
+            const searchText = `
+                ${issue.title}
+                ${issue.description}
+                ${issue.project_name || ""}
+                ${issue.location || ""}
+                ${issue.status}
+                ${issue.analysis.category}
+                ${issue.analysis.urgency}
+                ${issue.analysis.trade}
+                ${issue.analysis.summary}
+                ${issue.analysis_source}
+          `.toLowerCase();
+        
+            const matchesSearch = searchText.includes(searchTerm.toLowerCase());
+        
+            return matchesStatus && matchesSearch;
+    })
 
     async function handleDelete(issueId) {
         try {
@@ -32,6 +52,14 @@ function IssueList({ issues, onIssueDeleted }) {
     return (
         <div>
             <h2>Saved Issues</h2>
+
+            <input
+                className="search-input"
+                type="text"
+                placeholder="Search issues by title, trade, location, status..."
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+            />
 
             <div className="filter-row">
                 {["All", "Open", "In progress", "Resolved"].map((status) => (
@@ -86,6 +114,29 @@ function IssueList({ issues, onIssueDeleted }) {
                         <p>
                             <strong>Summary:</strong> {issue.analysis.summary}
                         </p>
+
+                        <div className="analysis-section">
+                            <h4>Next Steps</h4>
+                            <ul>
+                                {issue.analysis.next_steps.map((step, index) => (
+                                    <li key={index}>{step}</li>
+                                ))}
+                            </ul>
+                        </div>
+
+                        <div className="analysis-section">
+                            <h4>Recommended Tasks</h4>
+
+                            {issue.analysis.tasks.map((task, index) => (
+                                <div className="task-item" key={index}>
+                                    <p>
+                                        <strong>{task.title}</strong>
+                                    </p>
+                                    <p>Assigned to: {task.assigned_to}</p>
+                                    <p>Priority: {task.priority}</p>
+                                </div>
+                            ))}
+                        </div>
 
                         <button onClick={() => handleDelete(issue.id)}>
                             Delete

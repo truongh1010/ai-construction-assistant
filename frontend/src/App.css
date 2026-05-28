@@ -292,3 +292,82 @@ button:disabled {
   background: #dcfce7;
   color: #166534;
 }
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  background: white;
+  border-radius: 16px;
+  padding: 18px;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+}
+
+.stat-card p {
+  margin: 0 0 8px;
+  color: #6b7280;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.stat-card h3 {
+  margin: 0;
+  font-size: 30px;
+  color: #111827;
+}
+
+@media (max-width: 900px) {
+  .stats-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.analysis-section {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.analysis-section h4 {
+  margin: 0 0 10px;
+  color: #111827;
+}
+
+.analysis-section ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.analysis-section li {
+  margin-bottom: 6px;
+  line-height: 1.5;
+  color: #374151;
+}
+
+.task-item {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 10px;
+}
+
+.task-item p {
+  margin: 4px 0;
+  color: #374151;
+}
+
+.search-input {
+  width: 100%;
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 999px;
+  background: white;
+  color: #111827;
+  font-size: 15px;
+}
