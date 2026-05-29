@@ -11,6 +11,15 @@ function App() {
     const [searchTerm, setSearchTerm] = useState("");
     const [sortBy, setSortBy] = useState("newest");
     const [isLoadingIssues, setIsLoadingIssues] = useState(false);
+    const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearchTerm(searchTerm);
+        }, 400);
+      
+            return () => clearTimeout(timer);
+    }, [searchTerm]);
 
     async function loadIssues() {
         try {
@@ -18,7 +27,7 @@ function App() {
 
             const data = await getIssues({
                 status: statusFilter,
-                search: searchTerm,
+                search: debouncedSearchTerm,
                 sortedBy: sortBy
             });
             
@@ -32,7 +41,7 @@ function App() {
 
     useEffect(() => {
         loadIssues();
-    }, [statusFilter, searchTerm, sortBy]);
+    }, [statusFilter, debouncedSearchTerm, sortBy]);
 
     return (
         <div className="app">

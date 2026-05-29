@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { deleteIssue, updateIssueStatus, reanalyzeIssue, updateIssue } from "../api/issues";
+import { deleteIssue, updateIssueStatus, reanalyzeIssue, updateIssue, getApiErrorMessage } from "../api/issues";
 
 function IssueList({ 
     issues, 
@@ -17,7 +17,7 @@ function IssueList({
     // const [searchTerm, setSearchTerm] = useState("")
     // const [sortBy, setSortBy] = useState("Newest")
     const [reanalyzingId, setReanalyzingId] = useState(null)
-    const [editingId, setEditingId] = useState(null);
+    const [editingId, setEditingId] = useState(null)
     const [editForm, setEditForm] = useState({
         title: "",
         description: "",
@@ -32,7 +32,7 @@ function IssueList({
             onIssueDeleted()
         } catch (err) {
             console.error(err)
-            setError("Failed to reanalyze issue.")
+            setError(getApiErrorMessage(err, "Failed to reanalyze issue."))
         } finally {
             setReanalyzingId(null)
         }
@@ -40,11 +40,11 @@ function IssueList({
 
     async function handleDelete(issueId) {
         try {
-            await deleteIssue(issueId);
-            onIssueDeleted();
+            await deleteIssue(issueId)
+            onIssueDeleted()
         } catch (err) {
-            console.error(err);
-            setError("Failed to delete issue.");
+            console.error(err)
+            setError(getApiErrorMessage(err, "Failed to delete issue."))
         }
     }
 
@@ -54,7 +54,7 @@ function IssueList({
             onIssueDeleted()
         } catch (err) {
             console.error(err)
-            setError("Failed to update issue status")
+            setError(getApiErrorMessage(err, "Failed to update issue status"))
         }
     }
 

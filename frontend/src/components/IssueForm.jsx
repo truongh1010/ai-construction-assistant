@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { createIssue } from "../api/issues";
+import { createIssue, getApiErrorMessage } from "../api/issues";
 
 function IssueForm({ onIssueCreated }) {
     const [formData, setFormData] = useState({
@@ -43,7 +43,7 @@ function IssueForm({ onIssueCreated }) {
             });
         } catch (err) {
             console.error(err);
-            setError("Something went wrong while submitting the issue.");
+            setError(getApiErrorMessage(err, "Something went wrong while submitting the issue."));
         } finally {
             setLoading(false);
         }

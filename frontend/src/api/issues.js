@@ -53,3 +53,11 @@ export async function updateIssue(issueId, issueData) {
     const response = await axios.put(`${API_BASE_URL}/issues/${issueId}`, issueData);
     return response.data;
 }
+
+export function getApiErrorMessage(error, fallbackMessage) {
+    return (
+      error.response?.data?.detail ||
+      error.response?.data?.message ||
+      fallbackMessage
+    );
+  }

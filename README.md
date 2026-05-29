@@ -1,75 +1,153 @@
 # AI Construction Assistant
 
-This repository contains a backend API for an AI-powered construction assistant, built using FastAPI.
+A full-stack construction issue tracker with AI-powered analysis. Submit site issues from a React dashboard, get category/urgency/trade classification plus next steps and recommended tasks, then manage issues over their lifecycle.
 
 ## Features
 
-- REST API built with FastAPI
-- CORS enabled for local frontend development
-- Uses SQLAlchemy, psycopg2 for database operations
-- Environment variable management with python-dotenv
-- OpenAI integration for AI functionality
-- Data validation and serialization with Pydantic
+### Frontend (React + Vite)
 
-## Project Structure
+- Construction issue submission form with live AI analysis results
+- Dashboard stats: total, open, in progress, resolved, and high/critical urgency counts
+- Issue list with search, status filters, and sorting (newest, oldest, urgency, status)
+- Per-issue actions: edit details, change status, reanalyze with AI, delete
+- Debounced search and server-driven filtering/sorting via query parameters
+- Responsive layout styled with `App.css`
+
+### Backend (FastAPI)
+
+- REST API for issue CRUD and workflow operations
+- SQLite database (local file: `backend/construction_ai.db`)
+- OpenAI-powered analysis with automatic fallback to rule-based analysis when the API is unavailable
+- CORS enabled for the Vite dev server (`http://localhost:5173`, `http://127.0.0.1:5173`)
+- Pydantic schemas for request/response validation
+
+### AI analysis output
+
+Each issue receives:
+
+- **Category** (e.g. Plumbing, Safety, Schedule)
+- **Urgency** (Low, Medium, High, Critical)
+- **Trade** (responsible trade or role)
+- **Summary**
+- **Next steps** (action list)
+- **Recommended tasks** (title, assignee, priority)
+
+## Project structure
 
 ```
-backend/
-  app/
-    main.py         # FastAPI application and routes
-    schemas.py      # Pydantic models for request/response data
-  requirements.txt  # Python dependencies
+AI-construction-assistant/
+├── backend/
+│   ├── app/
+│   │   ├── main.py          # FastAPI routes
+│   │   ├── models.py        # SQLAlchemy Issue model
+│   │   ├── schemas.py       # Pydantic models
+│   │   ├── database.py      # SQLite engine and session
+│   │   ├── ai_service.py    # OpenAI + fallback analysis
+│   │   └── utils.py         # Response helpers
+│   ├── requirements.txt
+│   └── .env                 # OPENAI_API_KEY (not committed)
+├── frontend/
+│   ├── src/
+│   │   ├── App.jsx
+│   │   ├── App.css
+│   │   ├── api/issues.js    # Axios API client
+│   │   └── components/
+│   │       ├── IssueForm.jsx
+│   │       ├── IssueList.jsx
+│   │       └── DashBoardStats.jsx
+│   └── package.json
+└── README.md
 ```
 
-## Getting Started
+## API endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/` | Health check |
+| `POST` | `/issues` | Create issue and run AI analysis |
+| `GET` | `/issues` | List issues (`status`, `search`, `sort_by` query params) |
+| `GET` | `/issues/{id}` | Get one issue |
+| `PUT` | `/issues/{id}` | Update issue title, description, project, location |
+| `PATCH` | `/issues/{id}/status` | Update status (`Open`, `In Progress`, `Resolved`) |
+| `POST` | `/issues/{id}/reanalyze` | Re-run AI analysis on existing issue |
+| `DELETE` | `/issues/{id}` | Delete issue |
+
+### Query parameters for `GET /issues`
+
+| Param | Values | Description |
+|-------|--------|-------------|
+| `status` | `Open`, `In Progress`, `Resolved` | Filter by status (omit for all) |
+| `search` | string | Case-insensitive search across title, description, project, location, status, and analysis fields |
+| `sort_by` | `newest`, `oldest`, `urgency`, `status` | Sort order (default: `newest`) |
+
+## Getting started
 
 ### Prerequisites
 
 - Python 3.9+
-- [Poetry](https://python-poetry.org/) or `pip`
-- PostgreSQL database (if connecting to a real DB)
+- Node.js 18+ and npm
 
-### 1. Clone the repository
-
-```bash
-git clone <your-repo-url>
-cd <repo-directory>/backend
-```
-
-### 2. Install dependencies
+### 1. Backend setup
 
 ```bash
+cd backend
+python -m venv venv
+source venv/bin/activate   # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-### 3. Setup environment variables
+Create `backend/.env`:
 
-Create a `.env` file in `backend` and add:
-
-```
+```env
 OPENAI_API_KEY=your_openai_api_key_here
-DATABASE_URL=postgresql://user:password@localhost/dbname
 ```
 
-### 4. Run the API server
+> **Note:** If `OPENAI_API_KEY` is missing or the API call fails, the backend falls back to rule-based analysis in `ai_service.py` so the app still works locally.
+
+Start the API:
 
 ```bash
 uvicorn app.main:app --reload
 ```
 
-The server will be available at [http://localhost:8000](http://localhost:8000).
+API: [http://127.0.0.1:8000](http://127.0.0.1:8000)  
+Interactive docs: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
 
-### 5. API Health Check
+### 2. Frontend setup
 
-Access [http://localhost:8000/](http://localhost:8000/) in your browser or use:
+In a second terminal:
 
 ```bash
-curl http://localhost:8000/
+cd frontend
+npm install
+npm run dev
 ```
 
-You should receive a JSON response indicating the server is running.
+App: [http://localhost:5173](http://localhost:5173)
 
----
+The frontend calls the API at `http://127.0.0.1:8000` (see `frontend/src/api/issues.js`). Change `API_BASE_URL` there if your backend runs on a different host or port.
+
+### 3. Verify
+
+1. Open the frontend in your browser.
+2. Submit a construction issue (title + description required).
+3. Confirm AI analysis appears and the issue shows in the saved issues panel.
+4. Try filtering, searching, editing, changing status, reanalyzing, and deleting.
+
+## Tech stack
+
+| Layer | Technologies |
+|-------|----------------|
+| Frontend | React 19, Vite, Axios |
+| Backend | FastAPI, SQLAlchemy, Pydantic, Uvicorn |
+| Database | SQLite |
+| AI | OpenAI API (`gpt-4.1-mini`) with keyword-based fallback |
+
+## Development notes
+
+- The SQLite database file is created automatically on first run (`construction_ai.db` in `backend/`).
+- Backend `.env` and `*.db` are gitignored; do not commit secrets or local DB files.
+- Frontend components use **4-space** indentation.
 
 ## License
 
