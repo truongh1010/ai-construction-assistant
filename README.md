@@ -148,7 +148,3 @@ The frontend calls the API at `http://127.0.0.1:8000` (see `frontend/src/api/iss
 - The SQLite database file is created automatically on first run (`construction_ai.db` in `backend/`).
 - Backend `.env` and `*.db` are gitignored; do not commit secrets or local DB files.
 - Frontend components use **4-space** indentation.
-
-## License
-
-MIT License.
