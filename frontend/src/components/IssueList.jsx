@@ -1,10 +1,17 @@
 import { useState } from "react";
 import { deleteIssue, updateIssueStatus, reanalyzeIssue, updateIssue } from "../api/issues";
 
-function IssueList({ issues, onIssueDeleted }) {
+function IssueList({ 
+    issues, 
+    onIssueDeleted, 
+    statusFilter,
+    setStatusFilter,
+    searchTerm,
+    setSearchTerm, 
+}) {
     const [error, setError] = useState("");
-    const [statusFilter, setStatusFilter] = useState("All")
-    const [searchTerm, setSearchTerm] = useState("")
+    // const [statusFilter, setStatusFilter] = useState("All")
+    // const [searchTerm, setSearchTerm] = useState("")
     const [sortBy, setSortBy] = useState("Newest")
     const [reanalyzingId, setReanalyzingId] = useState(null)
     const [editingId, setEditingId] = useState(null);
@@ -13,27 +20,6 @@ function IssueList({ issues, onIssueDeleted }) {
         description: "",
         project_name: "",
         location: "",
-    });
-
-    const filteredIssues = issues.filter((issue) => {
-        const matchesStatus =
-            statusFilter === "All" || issue.status === statusFilter;
-
-        const searchText = `
-            ${issue.title}
-            ${issue.description}
-            ${issue.project_name || ""}
-            ${issue.location || ""}
-            ${issue.status}
-            ${issue.analysis.category}
-            ${issue.analysis.urgency}
-            ${issue.analysis.trade}
-            ${issue.analysis.summary}
-        `.toLowerCase();
-
-        const matchesSearch = searchText.includes(searchTerm.toLowerCase());
-
-        return matchesStatus && matchesSearch;
     });
 
     const urgencyRank = {
@@ -49,7 +35,7 @@ function IssueList({ issues, onIssueDeleted }) {
         Resolved: 1,
     };
 
-    const sortedIssues = [...filteredIssues].sort((a, b) => {
+    const sortedIssues = [...issues].sort((a, b) => {
         if (sortBy === "Newest") {
             return b.id - a.id;
         }

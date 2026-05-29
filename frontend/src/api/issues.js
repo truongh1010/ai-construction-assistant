@@ -7,8 +7,18 @@ export async function createIssue(issueData) {
     return response.data;
 }
 
-export async function getIssues() {
-    const response = await axios.get(`${API_BASE_URL}/issues`);
+export async function getIssues(filters = {}) {
+    const params = {};
+  
+    if (filters.status && filters.status !== "All") {
+        params.status = filters.status;
+    }
+  
+    if (filters.search && filters.search.trim() !== "") {
+        params.search = filters.search;
+    }
+  
+    const response = await axios.get(`${API_BASE_URL}/issues`, { params });
     return response.data;
 }
 

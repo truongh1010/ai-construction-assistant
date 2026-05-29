@@ -7,10 +7,16 @@ import "./App.css";
 
 function App() {
     const [issues, setIssues] = useState([]);
+    const [statusFilter, setStatusFilter] = useState("All");
+    const [searchTerm, setSearchTerm] = useState("");
 
     async function loadIssues() {
         try {
-            const data = await getIssues();
+            const data = await getIssues({
+                status: statusFilter,
+                search: searchTerm,
+            });
+            
             setIssues(data);
         } catch (err) {
             console.error("Failed to load issues:", err);
@@ -19,7 +25,7 @@ function App() {
 
     useEffect(() => {
         loadIssues();
-    }, []);
+    }, [statusFilter, searchTerm]);
 
     return (
         <div className="app">
@@ -41,7 +47,14 @@ function App() {
                 </section>
 
                 <section className="panel">
-                    <IssueList issues={issues} onIssueDeleted={loadIssues} />
+                <IssueList
+                    issues={issues}
+                    onIssueDeleted={loadIssues}
+                    statusFilter={statusFilter}
+                    setStatusFilter={setStatusFilter}
+                    searchTerm={searchTerm}
+                    setSearchTerm={setSearchTerm}
+                />
                 </section>
             </main>
         </div>
