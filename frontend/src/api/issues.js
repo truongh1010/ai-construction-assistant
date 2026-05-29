@@ -18,6 +18,10 @@ export async function getIssues(filters = {}) {
         params.search = filters.search;
     }
   
+    if (filters.sortBy) {
+        params.sort_by = filters.sortBy;
+    }
+  
     const response = await axios.get(`${API_BASE_URL}/issues`, { params });
     return response.data;
 }

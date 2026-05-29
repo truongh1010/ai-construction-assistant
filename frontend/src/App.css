@@ -419,3 +419,9 @@ button:disabled {
   border-radius: 14px;
   background: #f9fafb;
 }
+
+.loading-text {
+  color: #6b7280;
+  font-weight: 700;
+  padding: 16px 0;
+}

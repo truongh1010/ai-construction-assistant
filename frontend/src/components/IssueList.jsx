@@ -8,11 +8,14 @@ function IssueList({
     setStatusFilter,
     searchTerm,
     setSearchTerm, 
+    sortBy,
+    setSortBy,
+    isLoadingIssues,
 }) {
     const [error, setError] = useState("");
     // const [statusFilter, setStatusFilter] = useState("All")
     // const [searchTerm, setSearchTerm] = useState("")
-    const [sortBy, setSortBy] = useState("Newest")
+    // const [sortBy, setSortBy] = useState("Newest")
     const [reanalyzingId, setReanalyzingId] = useState(null)
     const [editingId, setEditingId] = useState(null);
     const [editForm, setEditForm] = useState({
@@ -20,42 +23,6 @@ function IssueList({
         description: "",
         project_name: "",
         location: "",
-    });
-
-    const urgencyRank = {
-        Critical: 4,
-        High: 3,
-        Medium: 2,
-        Low: 1,
-    };
-
-    const statusRank = {
-        Open: 3,
-        "In Progress": 2,
-        Resolved: 1,
-    };
-
-    const sortedIssues = [...issues].sort((a, b) => {
-        if (sortBy === "Newest") {
-            return b.id - a.id;
-        }
-
-        if (sortBy === "Oldest") {
-            return a.id - b.id;
-        }
-
-        if (sortBy === "Urgency") {
-            return (
-                (urgencyRank[b.analysis.urgency] || 0) -
-                (urgencyRank[a.analysis.urgency] || 0)
-            );
-        }
-
-        if (sortBy === "Status") {
-            return (statusRank[b.status] || 0) - (statusRank[a.status] || 0);
-        }
-
-        return 0;
     });
 
     async function handleReanalyze(issueId) {
@@ -146,15 +113,15 @@ function IssueList({
             <div className="sort-row">
                 <label>Sort by</label>
                 <select value={sortBy} onChange={(event) => setSortBy(event.target.value)}>
-                    <option value="Newest">Newest</option>
-                    <option value="Oldest">Oldest</option>
-                    <option value="Urgency">Urgency</option>
-                    <option value="Status">Status</option>
+                    <option value="newest">Newest</option>
+                    <option value="oldest">Oldest</option>
+                    <option value="urgency">Urgency</option>
+                    <option value="status">Status</option>
                 </select>
             </div>
 
             <div className="filter-row">
-                {["All", "Open", "In progress", "Resolved"].map((status) => (
+                {["All", "Open", "In Progress", "Resolved"].map((status) => (
                     <button
                         key={status}
                         className={statusFilter === status ? "filter-button active" : "filter-button"}
@@ -167,10 +134,12 @@ function IssueList({
 
             {error && <p>{error}</p>}
 
-            {sortedIssues.length === 0 ? (
+            {isLoadingIssues ? (
+                <p className="loading-text">Loading issues...</p>
+            ) : issues.length === 0 ? (
                 <p>No saved issues yet.</p>
             ) : (
-                sortedIssues.map((issue) => (
+                issues.map((issue) => (
                     <div className="issue-card" key={issue.id}>
                         {editingId === issue.id ? (
                             <div className="edit-form">
@@ -244,7 +213,7 @@ function IssueList({
                                 onChange={(event) => handleStatusChange(issue.id, event.target.value)}
                             >
                                 <option value="Open">Open</option>
-                                <option value="In progress">In progress</option>
+                                <option value="In Progress">In Progress</option>
                                 <option value="Resolved">Resolved</option>
                             </select>
                         </div>

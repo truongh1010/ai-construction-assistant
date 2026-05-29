@@ -17,6 +17,8 @@ from app.utils import build_issue_response
 
 from typing import List, Optional
 
+from sqlalchemy import case
+
 app = FastAPI(title="AI Construction Assistant API")
 
 # load_dotenv()
@@ -333,10 +335,41 @@ def create_issue(
 #             for issue in issues
 #     ]
 
+
+# @app.get("/issues", response_model=List[IssueResponse])
+# def get_issues(
+#     status: Optional[str] = None,
+#     search: Optional[str] = None,
+#     db: Session = Depends(get_db)
+# ):
+#     query = db.query(Issue)
+
+#     if status is not None and status != "All":
+#         query = query.filter(Issue.status == status)
+
+#     if search is not None and search.strip() != "":
+#         search_term = f"%{search.lower()}%"
+
+#         query = query.filter(
+#             Issue.title.ilike(search_term) |
+#             Issue.description.ilike(search_term) |
+#             Issue.project_name.ilike(search_term) |
+#             Issue.location.ilike(search_term) |
+#             Issue.category.ilike(search_term) |
+#             Issue.urgency.ilike(search_term) |
+#             Issue.trade.ilike(search_term) |
+#             Issue.summary.ilike(search_term)
+#         )
+
+#     issues = query.order_by(Issue.id.desc()).all()
+
+#     return [build_issue_response(issue) for issue in issues]
+
 @app.get("/issues", response_model=List[IssueResponse])
 def get_issues(
     status: Optional[str] = None,
     search: Optional[str] = None,
+    sort_by: Optional[str] = "newest",
     db: Session = Depends(get_db)
 ):
     query = db.query(Issue)
@@ -348,6 +381,7 @@ def get_issues(
         search_term = f"%{search.lower()}%"
 
         query = query.filter(
+            Issue.status.ilike(search_term) |
             Issue.title.ilike(search_term) |
             Issue.description.ilike(search_term) |
             Issue.project_name.ilike(search_term) |
@@ -358,7 +392,27 @@ def get_issues(
             Issue.summary.ilike(search_term)
         )
 
-    issues = query.order_by(Issue.id.desc()).all()
+    if sort_by == "oldest":
+        query = query.order_by(Issue.id.asc())
+    elif sort_by == "urgency":
+        urgency_order = case(
+            (Issue.urgency == "Critical", 4),
+            (Issue.urgency == "High", 3),
+            (Issue.urgency == "Medium", 2),
+            (Issue.urgency == "Low", 1),
+            else_=0
+        )
+
+        query = query.order_by(urgency_order.desc(), Issue.id.desc())
+    elif sort_by == "status":
+        query = query.order_by(
+            Issue.status.asc(),
+            Issue.id.desc()
+        )
+    else:
+        query = query.order_by(Issue.id.desc())
+
+    issues = query.all()
 
     return [build_issue_response(issue) for issue in issues]
 
@@ -396,12 +450,12 @@ def update_issue_status(
     if issue is None:
         raise HTTPException(status_code=404, detail="Issue not found.")
 
-    allowed_statuses = ["Open", "In progress", "Resolved"]
+    allowed_statuses = ["Open", "In Progress", "Resolved"]
 
     if status_update.status not in allowed_statuses:
         raise HTTPException(
             status_code=400,
-            detail="Invalid status. Open, In progress, or Resolved"
+            detail="Invalid status. Open, In Progress, or Resolved"
         )
 
     issue.status = status_update.status
