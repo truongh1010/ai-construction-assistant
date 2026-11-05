@@ -4,7 +4,7 @@ function DashboardStats({ issues }) {
     const open = issues.filter((issue) => issue.status === "Open").length;
 
     const inProgress = issues.filter(
-        (issue) => issue.status === "In progress"
+        (issue) => issue.status === "In Progress"
     ).length;
 
     const resolved = issues.filter((issue) => issue.status === "Resolved").length;
