@@ -50,7 +50,7 @@ def create_issue(
         analysis = openai_analyze_issue(issue)
         analysis_source = "openai"
     except Exception as e:
-        print("OpenAI analysis failed. Falling back to the fake AI:")
+        print("OpenAI analysis failed. Falling back to the fake AI:", e)
         analysis = fake_ai_analyze_issue(issue)
         analysis_source = "fallback"
 

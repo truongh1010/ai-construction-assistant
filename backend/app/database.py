@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, engine
+from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 
 DATABASE_URL = "sqlite:///./construction_ai.db"  # local file database
