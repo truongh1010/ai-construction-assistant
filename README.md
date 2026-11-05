@@ -17,9 +17,11 @@ A full-stack construction issue tracker with AI-powered analysis. Submit site is
 
 - REST API for issue CRUD and workflow operations
 - SQLite database (local file: `backend/construction_ai.db`)
-- OpenAI-powered analysis with automatic fallback to rule-based analysis when the API is unavailable
+- OpenAI-powered analysis using Structured Outputs, so the model is constrained to the `IssueAnalysis` schema
+- Automatic fallback to rule-based analysis when the API is unavailable or returns an unusable response
 - CORS enabled for the Vite dev server (`http://localhost:5173`, `http://127.0.0.1:5173`)
-- Pydantic schemas for request/response validation
+- Pydantic schemas for request/response validation, with `Literal` types restricting urgency, priority, and status to fixed values
+- pytest suite covering the endpoints and the fallback path
 
 ### AI analysis output
 
@@ -44,7 +46,9 @@ AI-construction-assistant/
 │   │   ├── database.py      # SQLite engine and session
 │   │   ├── ai_service.py    # OpenAI + fallback analysis
 │   │   └── utils.py         # Response helpers
+│   ├── tests/               # pytest suite (no API key or network needed)
 │   ├── requirements.txt
+│   ├── requirements-dev.txt # requirements.txt + pytest
 │   └── .env                 # OPENAI_API_KEY (not committed)
 ├── frontend/
 │   ├── src/
@@ -68,7 +72,7 @@ AI-construction-assistant/
 | `GET` | `/issues` | List issues (`status`, `search`, `sort_by` query params) |
 | `GET` | `/issues/{id}` | Get one issue |
 | `PUT` | `/issues/{id}` | Update issue title, description, project, location |
-| `PATCH` | `/issues/{id}/status` | Update status (`Open`, `In Progress`, `Resolved`) |
+| `PATCH` | `/issues/{id}/status` | Update status (`Open`, `In Progress`, `Resolved`; anything else returns `422`) |
 | `POST` | `/issues/{id}/reanalyze` | Re-run AI analysis on existing issue |
 | `DELETE` | `/issues/{id}` | Delete issue |
 
@@ -134,6 +138,16 @@ The frontend calls the API at `http://127.0.0.1:8000` (see `frontend/src/api/iss
 3. Confirm AI analysis appears and the issue shows in the saved issues panel.
 4. Try filtering, searching, editing, changing status, reanalyzing, and deleting.
 
+## Testing
+
+```bash
+cd backend
+pip install -r requirements-dev.txt
+pytest
+```
+
+Tests use FastAPI's `TestClient` with an in-memory SQLite database, so `construction_ai.db` is never touched. OpenAI calls go through the real SDK over a fake HTTP transport, so response parsing and schema validation run for real without an API key or network access.
+
 ## Tech stack
 
 | Layer | Technologies |
@@ -141,7 +155,8 @@ The frontend calls the API at `http://127.0.0.1:8000` (see `frontend/src/api/iss
 | Frontend | React 19, Vite, Axios |
 | Backend | FastAPI, SQLAlchemy, Pydantic, Uvicorn |
 | Database | SQLite |
-| AI | OpenAI API (`gpt-4.1-mini`) with keyword-based fallback |
+| AI | OpenAI API (`gpt-4.1-mini`) with Structured Outputs and keyword-based fallback |
+| Testing | pytest, FastAPI TestClient |
 
 ## Development notes
 

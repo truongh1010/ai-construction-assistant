@@ -316,7 +316,7 @@ def create_issue(
         summary=analysis.summary,
 
         next_steps=json.dumps(analysis.next_steps),
-        tasks=json.dumps([task.dict() for task in analysis.tasks]),
+        tasks=json.dumps([task.model_dump() for task in analysis.tasks]),
         analysis_source=analysis_source
     )
 
@@ -450,14 +450,6 @@ def update_issue_status(
     if issue is None:
         raise HTTPException(status_code=404, detail="Issue not found.")
 
-    allowed_statuses = ["Open", "In Progress", "Resolved"]
-
-    if status_update.status not in allowed_statuses:
-        raise HTTPException(
-            status_code=400,
-            detail="Invalid status. Open, In Progress, or Resolved"
-        )
-
     issue.status = status_update.status
 
     db.commit()
@@ -520,7 +512,7 @@ def reanalyze_issue(issue_id: int, db: Session = Depends(get_db)):
     issue.trade = analysis.trade
     issue.summary = analysis.summary
     issue.next_steps = json.dumps(analysis.next_steps)
-    issue.tasks = json.dumps([task.dict() for task in analysis.tasks])
+    issue.tasks = json.dumps([task.model_dump() for task in analysis.tasks])
     issue.analysis_source = analysis_source
 
     db.commit()

@@ -1,5 +1,6 @@
 import os
-import json
+from functools import lru_cache
+
 from dotenv import load_dotenv
 from openai import OpenAI
 
@@ -7,32 +8,20 @@ from app.schemas import IssueCreate, IssueAnalysis, TaskRecommendation
 
 load_dotenv()
 
-client = OpenAI(
-    api_key=os.getenv("OPENAI_API_KEY")
-)
+# created on first use: OpenAI() raises when the key is missing, and that has
+# to happen inside the try/except in the routes so the fallback can take over
+@lru_cache(maxsize=1)
+def get_client() -> OpenAI:
+    return OpenAI(
+        api_key=os.getenv("OPENAI_API_KEY")
+    )
 
 def openai_analyze_issue(issue: IssueCreate) -> IssueAnalysis:
 
-    system_prompt = f"""
+    system_prompt = """
     You are an AI assistant for construction project issue tracking.
 
-    Analyze a provided construction issue and return ONLY valid JSON. No Markdown. No Explanation.
-
-    Return JSON with exactly this structure:
-    {{
-        "category": "string",
-        "urgency": "Low | Medium | High | Critical",
-        "trade": "string",
-        "summary": "string",
-        "next_steps": ["string", "string", "string"],
-        "tasks": [
-            {{
-                "title": "string",
-                "assigned_to": "string",
-                "priority": "Low | Medium | High | Critical"
-            }}
-        ]
-    }}
+    Analyze a provided construction issue. Give at least three next steps.
     """
 
     user_prompt = f"""
@@ -44,7 +33,7 @@ def openai_analyze_issue(issue: IssueCreate) -> IssueAnalysis:
     Location: {issue.location}
     """
 
-    response = client.chat.completions.create(
+    response = get_client().chat.completions.parse(
         model="gpt-4.1-mini",
         messages=[
             {
@@ -56,25 +45,19 @@ def openai_analyze_issue(issue: IssueCreate) -> IssueAnalysis:
                 "content": user_prompt
             }
         ],
-        temperature=0.2
+        temperature=0.2,
+        response_format=IssueAnalysis
     )
 
-    content = response.choices[0].message.content
-    data = json.loads(content)
+    message = response.choices[0].message
 
-    return IssueAnalysis(
-        category=data["category"],
-        urgency=data["urgency"],
-        trade=data["trade"],
-        summary=data["summary"],
-        next_steps=data["next_steps"],
-        tasks=[
-            TaskRecommendation(**task)
-            for task in data["tasks"]
-        ]
-    )
+    # a refusal comes back as a normal response with nothing parsed
+    if message.parsed is None:
+        raise ValueError(f"OpenAI returned no analysis: {message.refusal}")
 
-  
+    return message.parsed
+
+
 def fake_ai_analyze_issue(issue: IssueCreate) -> IssueAnalysis:
     description = issue.description.lower()
 

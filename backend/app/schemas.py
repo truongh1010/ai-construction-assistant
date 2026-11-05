@@ -1,5 +1,9 @@
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Literal, Optional
+
+
+Urgency = Literal["Low", "Medium", "High", "Critical"]
+IssueStatus = Literal["Open", "In Progress", "Resolved"]
 
 
 class IssueCreate(BaseModel):
@@ -12,12 +16,12 @@ class IssueCreate(BaseModel):
 class TaskRecommendation(BaseModel):
     title: str
     assigned_to: str
-    priority: str
+    priority: Urgency
 
 
 class IssueAnalysis(BaseModel):
     category: str
-    urgency: str
+    urgency: Urgency
     trade: str
     summary: str
     next_steps: List[str]
@@ -30,7 +34,7 @@ class IssueResponse(BaseModel):
     description: str
     project_name: Optional[str] = None
     location: Optional[str] = None
-    status: str
+    status: IssueStatus
     analysis_source: str
     analysis: IssueAnalysis
 
@@ -39,7 +43,7 @@ class IssueResponse(BaseModel):
     }
 
 class IssueStatusUpdate(BaseModel):
-    status: str
+    status: IssueStatus
 
 
 class IssueUpdate(BaseModel):
