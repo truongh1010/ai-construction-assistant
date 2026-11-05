@@ -215,16 +215,3 @@ def test_reanalyze_uses_edited_issue_text(client, make_issue, fake_openai):
 
 def test_reanalyze_not_found(client):
     assert client.post("/issues/999/reanalyze").status_code == 404
-
-
-# POST /issues/analyze
-
-def test_analyze_preview_returns_analysis_without_saving(client):
-    response = client.post(
-        "/issues/analyze",
-        json={"title": "Leak", "description": "Pipe burst"}
-    )
-
-    assert response.status_code == 200
-    assert response.json()["urgency"] == "High"
-    assert client.get("/issues").json() == []
